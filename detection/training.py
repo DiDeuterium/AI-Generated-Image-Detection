@@ -81,7 +81,7 @@ def learning_rate(update, updates, warmup, min_lr, max_lr):
     return min_lr + (max_lr - min_lr) * (1 + math.cos(math.pi * progress)) / 2
 
 
-def train_epoch(model, loader, optimizer, scaler, device, config, step, total_steps):
+def train_epoch(model, loader, optimizer, scaler, device, config, step, total_steps, ema=None):
     model.train()
     accumulation = config["effective_batch"] // config["microbatch"]
     if len(loader) % accumulation or len(loader.dataset) % config["effective_batch"]:
@@ -116,6 +116,8 @@ def train_epoch(model, loader, optimizer, scaler, device, config, step, total_st
             skipped += 1
         else:
             step += 1
+            if ema is not None:
+                ema.update_parameters(model)
     synchronize(device)
     seconds = time.perf_counter() - start
     mean_loss = loss_sum.item() / len(loader.dataset)
@@ -207,6 +209,14 @@ def fit(model, train_loader, val_loader, jpeg_loader, device, run_dir, metadata,
     )
     scaler = torch.amp.GradScaler(device.type, init_scale=4096,
                                   enabled=device.type in ("cuda", "xpu"))
+    decay = config.get("ema_decay", 0.0)
+    ema = None
+    if decay:
+        ema = torch.optim.swa_utils.AveragedModel(
+            model, multi_avg_fn=torch.optim.swa_utils.get_ema_multi_avg_fn(decay),
+            use_buffers=True,
+        )
+    eval_model = model if ema is None else ema.module
     epochs = config["epochs"]
     steps_per_epoch = metadata["train_count"] // config["effective_batch"]
     total_steps = epochs * steps_per_epoch
@@ -222,6 +232,8 @@ def fit(model, train_loader, val_loader, jpeg_loader, device, run_dir, metadata,
         model.load_state_dict(state["model_state"])
         optimizer.load_state_dict(state["optimizer"])
         scaler.load_state_dict(state["scaler"])
+        if ema is not None:
+            ema.load_state_dict(state["ema"])
         history, best = state["history"], state["best"]
 
     step = history[-1]["optimizer_updates"] if history else 0
@@ -230,10 +242,10 @@ def fit(model, train_loader, val_loader, jpeg_loader, device, run_dir, metadata,
         epoch_seed = int(np.random.SeedSequence([seed, epoch]).generate_state(1)[0])
         seed_all(epoch_seed, device)
         entry = train_epoch(model, train_loader(epoch_seed), optimizer, scaler,
-                            device, config, step, total_steps)
+                            device, config, step, total_steps, ema)
         step = entry["optimizer_updates"]
         start = time.perf_counter()
-        metrics, _ = evaluate(model, val_loader, device)
+        metrics, _ = evaluate(eval_model, val_loader, device)
         entry.update(epoch=epoch, original=metrics, val_seconds=time.perf_counter() - start)
         history.append(entry)
 
@@ -242,13 +254,16 @@ def fit(model, train_loader, val_loader, jpeg_loader, device, run_dir, metadata,
                 "epoch": epoch,
                 "original_auroc": metrics["auroc"],
                 "model_state": {key: value.detach().to("cpu", copy=True)
-                                for key, value in model.state_dict().items()},
+                                for key, value in eval_model.state_dict().items()},
             }
-        save_checkpoint(state_path, {
+        state = {
             "metadata": metadata, "history": history, "best": best,
             "model_state": model.state_dict(), "optimizer": optimizer.state_dict(),
             "scaler": scaler.state_dict(),
-        })
+        }
+        if ema is not None:
+            state["ema"] = ema.state_dict()
+        save_checkpoint(state_path, state)
         _write_history(run_dir / "epochs.csv", history)
         print(f"{run_dir.name} epoch {epoch}/{epochs}  loss={entry['train_loss']:.4f} "
               f"val_AUROC={metrics['auroc']:.4f}  train={entry['train_seconds']:.1f}s",
@@ -260,8 +275,8 @@ def fit(model, train_loader, val_loader, jpeg_loader, device, run_dir, metadata,
         return None
     save_checkpoint(best_path, {"metadata": metadata, **best})
     checkpoint = load_checkpoint(best_path)
-    model.load_state_dict(checkpoint["model_state"])
-    validation = evaluate_pair(model, val_loader, jpeg_loader, device, run_dir)
+    eval_model.load_state_dict(checkpoint["model_state"])
+    validation = evaluate_pair(eval_model, val_loader, jpeg_loader, device, run_dir)
     peaks = [entry["peak_allocated_bytes"] for entry in history
              if entry["peak_allocated_bytes"] is not None]
     summary = {

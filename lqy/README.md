@@ -57,3 +57,16 @@ python -m lqy.cnn --device cuda export --checkpoint lqy/runs/formal/resnet18-s42
 ```sh
 python -m lqy.ensemble --device xpu --workers 4 --runs lqy/runs/formal/resnet18-s17 lqy/runs/formal/resnet18-s43 lqy/runs/formal/resnet18-s97 --output lqy/runs/formal/ensemble-three-seeds --export
 ```
+
+## 原尺度裁剪试验
+
+扩展配置以 ResNet-18 为骨干，随机初始化，使用相同的 6,400/1,600 划分。先解码 RGB，再在原尺度上裁剪 320 × 320 图块。短边不足 320 时反射填充。把图块中每个 2 × 2 像素单元分解为 RGB 均值及三个方向残差，送入 ResNet-18 的 12 通道第一层。配置包含 50% 概率的 Q75 JPEG 增强和衰减系数为 0.99 的 EMA，训练预算上限是 60 轮。 [试验配置](native320.json)
+
+第一条命令试跑种子 42 的前 12 轮并保留断点。第二条命令用五裁剪与翻转评估阶段最佳权重，也会在同一轮次比较 EMA 权重和普通权重。
+
+```sh
+python -m lqy.native --device xpu train --seeds 42 --epoch-limit 12 --output lqy/runs/native320
+python -m lqy.native --device xpu preview --run lqy/runs/native320/resnet18-native-s42 --compare-ema --output lqy/runs/native320/preview-12
+```
+
+对已有统一基线权重评估五裁剪与翻转时，使用 `python -m lqy.tta`。各模型将同一图像十个视图的 AI 类概率取均值。验证集原图和 JPEG Q75 按 ID 对齐。
