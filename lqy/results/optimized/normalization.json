@@ -1,0 +1,19 @@
+{
+  "split_sha256": "6ef93e94f6eb2f002264a3bd00eb35daaee587882c8437f945864f69f50fb4ba",
+  "short_side": 320,
+  "crop_size": 320,
+  "train_count": 6400,
+  "val_count": 1600,
+  "geometry": "native-crop-reflect-v1",
+  "mean": [
+    0.48775895148782167,
+    0.4564519161448759,
+    0.4039181377156576
+  ],
+  "std": [
+    0.28256750638044953,
+    0.27436658658657176,
+    0.28620512720150043
+  ],
+  "pixel_count_per_channel": 655360000
+}

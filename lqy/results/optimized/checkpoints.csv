@@ -1,0 +1,5 @@
+seed,best_epoch,repo_relative_checkpoint,bytes,sha256
+17,49,lqy/runs/native320/resnet18-native-s17/best.pt,44901127,9029e7fe460aa340b9887826cfd84d7e7a715b377ec76b56a090d9cc09738064
+42,43,lqy/runs/native320/resnet18-native-s42/best.pt,44901127,7d446da6e7b978cec80561270790db3642a0ba7a8d120d50d04100aab1dd8a80
+43,57,lqy/runs/native320/resnet18-native-s43/best.pt,44901127,73f26e727308d31a6dabf11744a5fa2fe107c072052901b33a69e4d78c16d368
+97,58,lqy/runs/native320/resnet18-native-s97/best.pt,44901127,ad9b08c54b563cf79bd6365b6f59526d2fad189150c0d91b03798aa4ee54a876

@@ -70,3 +70,13 @@ python -m lqy.native --device xpu preview --run lqy/runs/native320/resnet18-nati
 ```
 
 对已有统一基线权重评估五裁剪与翻转时，使用 `python -m lqy.tta`。各模型将同一图像十个视图的 AI 类概率取均值。验证集原图和 JPEG Q75 按 ID 对齐。
+
+四个种子的正式优化结果已完成。每个种子使用 60 轮训练预算，权重按各自的原图验证 AUROC 选定。以下 PowerShell 命令在新目录复现四种子训练、配对 TTA 评估和最终测试集成。 [四种子成绩、逐轮日志与权重校验值](results/optimized/README.md)
+
+```powershell
+$nativeOutput = 'lqy/runs/native320-reproduced'
+python -m lqy.native --device xpu train --output $nativeOutput
+$nativeRuns = @(17, 42, 43, 97 | ForEach-Object { "$nativeOutput/resnet18-native-s$_" })
+python -m lqy.native --device xpu evaluate --runs @nativeRuns --output "$nativeOutput/final-tta"
+python -m lqy.native --device xpu export --runs @nativeRuns --output "$nativeOutput/submission.csv"
+```
