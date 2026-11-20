@@ -1,0 +1,22 @@
+{
+  "short_side": 256,
+  "crop_size": 224,
+  "flip_probability": 0.5,
+  "jpeg_quality": 75,
+  "jpeg_subsampling": 2,
+  "comparison_jpeg_probability": 0.5,
+  "effective_batch": 64,
+  "microbatch": 32,
+  "epochs": 30,
+  "warmup_updates": 200,
+  "min_lr": 0.000003,
+  "max_lr": 0.0003,
+  "weight_decay": 0.01,
+  "betas": [0.9, 0.999],
+  "eps": 1e-8,
+  "screen_seed": 42,
+  "repeat_seeds": [17, 43, 97],
+  "train_per_class": 3200,
+  "val_per_class": 800,
+  "test_count": 1000
+}
