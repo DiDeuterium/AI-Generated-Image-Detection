@@ -1,0 +1,21 @@
+{
+  "device": "xpu",
+  "device_name": "Intel(R) Arc(TM) Graphics",
+  "precision": "fp16_amp",
+  "workers": 4,
+  "threads": 4,
+  "python": "3.14.4",
+  "torch": "2.11.0+xpu",
+  "torchvision": "0.26.0+xpu",
+  "pillow": "11.3.0",
+  "numpy": "2.4.4",
+  "cuda": null,
+  "git_commit": "b6b95051df0bcb00dbfbb249c0388086ddd727de",
+  "source_sha256": {
+    "detection/__init__.py": "ba2ed59d735fec13d769246a23e19faeaf0765813c108db1e32f17918c268f1b",
+    "detection/data.py": "8211be984791af373e28c2464354879d59bb2aa781b8a5c0b741186573b3828c",
+    "detection/metrics.py": "dfe411e60549d6559342b687cc7a7be6bb94e5c9a6a0d9bba2da1ff88c5258e1",
+    "detection/training.py": "243f87e3581af56914e836c8cf931b60b72182eb619d810c2006cce92cc732ba",
+    "lqy/cnn.py": "82788554635f1ff10afcae3631ffb3f706e8ff16c9c7b02fc584b5e7f06231d5"
+  }
+}

@@ -1,0 +1,7 @@
+run,best_epoch,repo_relative_checkpoint,bytes,sha256
+resnet18-s42,24,lqy/runs/formal/resnet18-s42/best.pt,44786827,0e5314ad8fc4f64f628ff942d70fe84608320f8f56e9f01d8118711073ed2d85
+mobilenet_v2-s42,27,lqy/runs/formal/mobilenet_v2-s42/best.pt,9138827,d5dcd05aa078573f2dbfb0f1b42da1d318190296a67c4a4b8a49a55eea317616
+resnet18-s17,22,lqy/runs/formal/resnet18-s17/best.pt,44786827,0d7913bbaf0b1440b627f90d07a82dc9c963b0308867cf33502880d78d36ab52
+resnet18-s43,25,lqy/runs/formal/resnet18-s43/best.pt,44786827,0ad3c2e59b23c018c74f47174c77afb5b8788e789e16e0ad1dd61e290fbaa771
+resnet18-s97,26,lqy/runs/formal/resnet18-s97/best.pt,44786827,22e0880fd49557048d22baf45db3170879f6dce861ed252825b82162857b97d7
+resnet18-s42-jpeg,26,lqy/runs/formal/resnet18-s42-jpeg/best.pt,44786827,1739e8c75c1f5a9695880bca6ce8725732f7cce2d1d31008d7c90d1d5dd9bdf7

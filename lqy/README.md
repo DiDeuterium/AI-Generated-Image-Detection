@@ -47,3 +47,13 @@ python -m lqy.cnn --device cuda export --checkpoint lqy/runs/formal/resnet18-s42
 ```
 
 其他骨干可复用 `detection.data` 的清单、变换、归一化和数据加载器，以及 `detection.training.fit` 的训练与评估入口。模型需返回形状为 `[batch, 2]` 的 logits。
+
+## 本次实验记录
+
+正式实验使用 Intel Arc XPU、PyTorch 2.11.0+xpu 和 torchvision 0.26.0+xpu，训练源码提交为 `b6b9505`。在同一环境下重跑时，可用 `python -m lqy.cnn --device xpu --workers 4 --threads 4 suite --norm lqy/results/normalization.json --output lqy/runs/reproduced --resume`。 [实验结果与逐轮日志](results/README.md)
+
+三个独立种子的 ResNet-18 权重也可以按 AI 类概率做等权集成。以下命令先根据三组已有的配对验证预测计算集成指标，随后按模板导出测试预测。
+
+```sh
+python -m lqy.ensemble --device xpu --workers 4 --runs lqy/runs/formal/resnet18-s17 lqy/runs/formal/resnet18-s43 lqy/runs/formal/resnet18-s97 --output lqy/runs/formal/ensemble-three-seeds --export
+```
