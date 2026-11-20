@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 import torch
 from PIL import Image, UnidentifiedImageError
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, Sampler
 from torchvision import transforms
 
 
@@ -100,14 +100,13 @@ class ImageDataset(Dataset):
         self.jpeg_probability = jpeg_probability
         self.quality = quality
         self.subsampling = subsampling
-        ops = [transforms.Resize(short_side, interpolation=transforms.InterpolationMode.BILINEAR,
-                                 antialias=True)]
-        if train:
-            ops.extend([transforms.RandomCrop(crop_size),
-                        transforms.RandomHorizontalFlip(flip_probability)])
-        else:
-            ops.append(transforms.CenterCrop(crop_size))
-        ops.append(transforms.ToTensor())
+        self.train = train
+        self.crop_size = crop_size
+        self.flip_probability = flip_probability
+        self.resize = transforms.Resize(short_side, interpolation=transforms.InterpolationMode.BILINEAR,
+                                        antialias=True)
+        self.center_crop = transforms.CenterCrop(crop_size)
+        ops = [transforms.ToTensor()]
         if norm is not None:
             ops.append(transforms.Normalize(norm["mean"], norm["std"]))
         self.transform = transforms.Compose(ops)
@@ -116,17 +115,48 @@ class ImageDataset(Dataset):
         return len(self.samples)
 
     def __getitem__(self, index):
+        rng = random
+        if isinstance(index, tuple):
+            epoch_seed, index = index
+            rng = random.Random((epoch_seed << 32) + index)
         sample = self.samples[index]
         try:
             with Image.open(sample.path) as source:
                 image = source.convert("RGB")
         except (UnidentifiedImageError, OSError) as exc:
             raise ValueError(f"Cannot decode {sample.image_id} at {sample.path}: {exc}") from exc
-        if self.jpeg_probability == 1 or (
-            self.jpeg_probability > 0 and random.random() < self.jpeg_probability
-        ):
+        recode = self.jpeg_probability == 1
+        if self.train or 0 < self.jpeg_probability < 1:
+            recode = rng.random() < self.jpeg_probability
+        if recode:
             image = jpeg_roundtrip(image, self.quality, self.subsampling)
+        image = self.resize(image)
+        if self.train:
+            width, height = image.size
+            top = rng.randrange(height - self.crop_size + 1)
+            left = rng.randrange(width - self.crop_size + 1)
+            image = transforms.functional.crop(image, top, left, self.crop_size, self.crop_size)
+            if rng.random() < self.flip_probability:
+                image = transforms.functional.hflip(image)
+        else:
+            image = self.center_crop(image)
         return self.transform(image), sample.label, sample.image_id
+
+
+class EpochSampler(Sampler):
+    """Send the epoch seed with each index to keep augmentation independent of worker lifetime."""
+
+    def __init__(self, dataset):
+        self.dataset = dataset
+        self.seed = 0
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __iter__(self):
+        seed = self.seed
+        generator = torch.Generator().manual_seed(seed)
+        return ((seed, index) for index in torch.randperm(len(self), generator=generator).tolist())
 
 
 def seed_worker(_worker_id):
@@ -135,11 +165,13 @@ def seed_worker(_worker_id):
     random.seed(seed)
 
 
-def make_loader(dataset, batch_size, workers, *, shuffle=False, seed=0, pin_memory=False):
+def make_loader(dataset, batch_size, workers, *, shuffle=False, seed=0, pin_memory=False,
+                sampler=None, persistent=False):
     return DataLoader(
         dataset, batch_size=batch_size, num_workers=workers, shuffle=shuffle,
         pin_memory=pin_memory, worker_init_fn=seed_worker,
-        generator=torch.Generator().manual_seed(seed),
+        generator=torch.Generator().manual_seed(seed), sampler=sampler,
+        persistent_workers=persistent and workers > 0,
     )
 
 

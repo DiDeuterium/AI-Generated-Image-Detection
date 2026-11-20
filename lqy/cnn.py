@@ -15,7 +15,8 @@ import torchvision
 from torchvision.models import mobilenet_v2, resnet18
 
 from detection.data import (
-    ImageDataset, estimate_normalization, fingerprint, make_loader, read_split, read_test,
+    EpochSampler, ImageDataset, estimate_normalization, fingerprint, make_loader, read_split,
+    read_test,
 )
 from detection.training import (
     atomic_file, evaluate_pair, fit, load_checkpoint, predict, seed_all, write_csv, write_json,
@@ -123,7 +124,7 @@ def validation_loaders(samples, config, norm, workers, device, batch_size=None):
     datasets = [image_dataset(samples, config, norm=norm, jpeg_probability=prob)
                 for prob in (0.0, 1.0)]
     return [make_loader(dataset, batch_size or config["microbatch"], workers,
-                        pin_memory=device.type == "cuda") for dataset in datasets]
+                        pin_memory=device.type == "cuda", persistent=True) for dataset in datasets]
 
 
 def code_version():
@@ -191,10 +192,14 @@ def train_one(args, config, groups, norm, device, model_name, seed, jpeg_augment
         groups["train"], config, norm=norm, train=True,
         jpeg_probability=metadata["jpeg_train_probability"],
     )
+    sampler = EpochSampler(train_dataset)
+    train_batches = make_loader(train_dataset, config["microbatch"], args.workers,
+                                sampler=sampler, seed=seed, pin_memory=device.type == "cuda",
+                                persistent=True)
 
     def train_loader(epoch_seed):
-        return make_loader(train_dataset, config["microbatch"], args.workers, shuffle=True,
-                           seed=epoch_seed, pin_memory=device.type == "cuda")
+        sampler.seed = epoch_seed
+        return train_batches
 
     val_loader, jpeg_loader = validation_loaders(groups["val"], config, norm, args.workers, device)
     with run_lock(run_dir):
