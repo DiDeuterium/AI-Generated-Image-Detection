@@ -199,7 +199,7 @@ def _write_history(path, history):
 
 
 def fit(model, train_loader, val_loader, jpeg_loader, device, run_dir, metadata, *, resume=False,
-        epoch_limit=None):
+        epoch_limit=None, selection_loader=None):
     """Train a binary model. train_loader(epoch_seed) returns the shuffled epoch loader."""
     config = metadata["config"]
     seed = metadata["seed"]
@@ -246,16 +246,25 @@ def fit(model, train_loader, val_loader, jpeg_loader, device, run_dir, metadata,
         step = entry["optimizer_updates"]
         start = time.perf_counter()
         metrics, _ = evaluate(eval_model, val_loader, device)
+        rank = (metrics["auroc"],)
+        rank_text = f"val_AUROC={metrics['auroc']:.4f}"
+        if selection_loader is not None:
+            selection, _ = evaluate(eval_model, selection_loader, device)
+            rank = (selection["accuracy"], selection["auroc"])
+            entry.update(stress_accuracy=rank[0], stress_auroc=rank[1])
+            rank_text += f"  stress_accuracy={rank[0]:.4f}  stress_AUROC={rank[1]:.4f}"
         entry.update(epoch=epoch, original=metrics, val_seconds=time.perf_counter() - start)
         history.append(entry)
 
-        if best is None or metrics["auroc"] > best["original_auroc"]:
+        if best is None or rank > best.get("selection_rank", (best["original_auroc"],)):
             best = {
                 "epoch": epoch,
                 "original_auroc": metrics["auroc"],
                 "model_state": {key: value.detach().to("cpu", copy=True)
                                 for key, value in eval_model.state_dict().items()},
             }
+            if selection_loader is not None:
+                best["selection_rank"] = rank
         state = {
             "metadata": metadata, "history": history, "best": best,
             "model_state": model.state_dict(), "optimizer": optimizer.state_dict(),
@@ -266,7 +275,7 @@ def fit(model, train_loader, val_loader, jpeg_loader, device, run_dir, metadata,
         save_checkpoint(state_path, state)
         _write_history(run_dir / "epochs.csv", history)
         print(f"{run_dir.name} epoch {epoch}/{epochs}  loss={entry['train_loss']:.4f} "
-              f"val_AUROC={metrics['auroc']:.4f}  train={entry['train_seconds']:.1f}s",
+              f"{rank_text}  train={entry['train_seconds']:.1f}s",
               flush=True)
 
     # Rebuild exported artifacts from the checkpoint if interrupted after checkpointing.
@@ -277,6 +286,8 @@ def fit(model, train_loader, val_loader, jpeg_loader, device, run_dir, metadata,
     checkpoint = load_checkpoint(best_path)
     eval_model.load_state_dict(checkpoint["model_state"])
     validation = evaluate_pair(eval_model, val_loader, jpeg_loader, device, run_dir)
+    if selection_loader is not None:
+        validation["stress_selection"], _ = evaluate(eval_model, selection_loader, device)
     peaks = [entry["peak_allocated_bytes"] for entry in history
              if entry["peak_allocated_bytes"] is not None]
     summary = {
