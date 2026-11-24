@@ -1,0 +1,8 @@
+fqm/tune/configs/w1_control.json
+fqm/tune/configs/w1_wd05_ls01.json
+fqm/tune/configs/w1_dp015_wd05.json
+fqm/tune/configs/w1_rrc_jitter.json
+fqm/tune/configs/w1_long60.json
+fqm/tune/configs/w1_ema.json
+fqm/tune/configs/w1_m2.json
+fqm/tune/configs/w1_native.json

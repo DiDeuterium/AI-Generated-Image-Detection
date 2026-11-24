@@ -1,0 +1,4 @@
+fqm/tune/configs/w7_cap_jpeg10.json
+fqm/tune/configs/w7_cap_jpeg05.json
+fqm/tune/configs/w7_nocap_jpeg10.json
+fqm/tune/configs/w7_cap_jpeg10_ls01.json

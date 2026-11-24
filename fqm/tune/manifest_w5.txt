@@ -1,0 +1,8 @@
+fqm/tune/configs/w5_cap30.json
+fqm/tune/configs/w5_hf30.json
+fqm/tune/configs/w5_block30.json
+fqm/tune/configs/w5_cap60.json
+fqm/tune/configs/w5_cap_detach30.json
+fqm/tune/configs/w5_cap_block7_30.json
+fqm/tune/configs/w5_cap_ls01_30.json
+fqm/tune/configs/w5_cap_m2_30.json

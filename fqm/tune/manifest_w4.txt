@@ -1,0 +1,4 @@
+fqm/tune/configs/w4_native384.json
+fqm/tune/configs/w4_native320_m2.json
+fqm/tune/configs/w4_native320_wd02.json
+fqm/tune/configs/w4_native320_ls01.json

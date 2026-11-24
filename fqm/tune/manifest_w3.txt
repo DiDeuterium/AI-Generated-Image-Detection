@@ -1,0 +1,8 @@
+fqm/tune/configs/w3_native320.json
+fqm/tune/configs/w3_native256_long.json
+fqm/tune/configs/w3_native320_long.json
+fqm/tune/configs/w3_native_m2_256.json
+fqm/tune/configs/w3_native_noflip.json
+fqm/tune/configs/w3_native_lr5e4.json
+fqm/tune/configs/w3_native_wd02.json
+fqm/tune/configs/w3_native_ls01.json

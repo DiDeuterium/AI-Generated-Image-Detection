@@ -1,0 +1,4 @@
+fqm/tune/configs/w6_cap60_hfonly.json
+fqm/tune/configs/w6_cap60_jpegaug.json
+fqm/tune/configs/w6_cap60_ls01.json
+fqm/tune/configs/w6_cap60_256.json

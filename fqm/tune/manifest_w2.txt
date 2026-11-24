@@ -1,0 +1,8 @@
+fqm/tune/configs/w2_native_ema.json
+fqm/tune/configs/w2_native_long60.json
+fqm/tune/configs/w2_native_256.json
+fqm/tune/configs/w2_native_m2.json
+fqm/tune/configs/w2_native_jpegaug.json
+fqm/tune/configs/w2_native_mixup.json
+fqm/tune/configs/w2_native_lr1e3.json
+fqm/tune/configs/w2_native_ls0.json
